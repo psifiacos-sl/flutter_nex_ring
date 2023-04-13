@@ -33,7 +33,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler, ActivityAw
   private lateinit var activity: Activity
 
   private val bleManager by lazy {
-    NexRingManager.init(activity.application)
+   // NexRingManager.init(activity.application)
     BleManager(context)
   }
 
