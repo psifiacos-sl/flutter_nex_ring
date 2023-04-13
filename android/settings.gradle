@@ -1,0 +1,2 @@
+rootProject.name = 'nexring_flutter_platform'
+include ':nexring'
