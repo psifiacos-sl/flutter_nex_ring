@@ -22,6 +22,7 @@ import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import android.content.Context
 import android.app.Activity
+import android.app.Application
 
 /** NexringFlutterPlatformPlugin */
 class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
@@ -31,14 +32,28 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler, ActivityAw
 
   private lateinit var context: Context
   private lateinit var activity: Activity
+  //private lateinit var application: Application
 
   private val bleManager by lazy {
-   // NexRingManager.init(activity.application)
+    NexRingManager.init(context as Application)
     BleManager(context)
   }
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     context = flutterPluginBinding.applicationContext
+//    while (context != null) {
+//      Log.w("onAttachedToEngine", "Trying to resolve Application from Context: ${context.javaClass.name}")
+//      application = context as Application
+//      if (application != null) {
+//        Log.i("onAttachedToEngine", "Resolved Application from Context")
+//        break
+//      } else {
+//        context = context.applicationContext
+//      }
+//    }
+//    if (application == null) {
+//      Log.e("onAttachedToEngine", "Fail to resolve Application from Context")
+//    }
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, Constants.methodChannel)
     channel.setMethodCallHandler(this)
     eventChannelHandler = EventChannelHandler(flutterPluginBinding.binaryMessenger,

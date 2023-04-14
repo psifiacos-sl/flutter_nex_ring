@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:nexring_flutter_platform/nexring_flutter_platform.dart';
+import 'package:nexring_flutter_platform/android_implementation/nex_ring_android_platform_interface.dart';
 import 'package:flutter/services.dart';
 
 void main() {
@@ -28,7 +28,7 @@ class _MyAppState extends State<MyApp> {
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
     try {
-      ble = await NexRingFlutterPlatform().isBleSupported();
+      ble = await NexRingAndroidPlatform.instance.isBleSupported();
       if(ble) {
 
       }
