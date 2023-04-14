@@ -113,11 +113,11 @@ class NexRingAndroidSleepManager extends NexRingAndroidSleepPlatform {
   }
 
   @override
-  Future<IntData> getTotalSteps(String btMac, {int? ts}) async {
+  Future<IntData?> getTotalSteps(String btMac, {int? ts}) async {
     final res = await _methodChannel.invokeMethod(
         NexRingConstants.android_sleep_getTotalSteps,
         {"btMac": btMac, "ts": ts});
-    return IntData.fromJson(jsonDecode(res));
+    return res == null ? null : IntData.fromJson(jsonDecode(res));
   }
 
   @override

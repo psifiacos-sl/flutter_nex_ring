@@ -22,7 +22,7 @@ abstract class NexRingAndroidSleepPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<IntData> getTotalSteps(String btMac, {int? ts});
+  Future<IntData?> getTotalSteps(String btMac, {int? ts});
 
   Future<int> getDayCount(String btMac);
 
