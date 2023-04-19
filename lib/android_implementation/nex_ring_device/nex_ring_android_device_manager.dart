@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
+import 'package:rxdart/rxdart.dart';
 import '../../domain/battery_info.dart';
 import '../../domain/ble_device.dart';
 import '../../utils/nex_ring_constants.dart';
@@ -15,7 +16,7 @@ class NexRingAndroidDeviceManager extends NexRingAndroidDevicePlatform {
       const MethodChannel(NexRingConstants.methodChannelName);
   final EventChannel _eventChannel = const EventChannel(NexRingConstants.eventChannelNameDeviceManager);
 
-  final StreamController<BatteryInfo> _batteryInfoController = StreamController();
+  final PublishSubject<BatteryInfo> _batteryInfoController = PublishSubject();
 
   NexRingAndroidDeviceManager() {
     _eventChannel.receiveBroadcastStream().listen((r) {
