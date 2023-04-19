@@ -1,4 +1,6 @@
 
+import 'dart:async';
+
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import '../../domain/battery_info.dart';
 import '../../domain/ble_device.dart';
@@ -21,6 +23,8 @@ abstract class NexRingAndroidDevicePlatform extends PlatformInterface {
     _instance = instance;
   }
 
+  Stream<BatteryInfo> get batteryInfoStream;
+
   Future<String> getDeviceSN();
 
   Future<bool> bind();
@@ -33,7 +37,7 @@ abstract class NexRingAndroidDevicePlatform extends PlatformInterface {
 
   Future<bool> reboot();
 
-  Future<BatteryInfo> getBatteryInfo();
+  void getBatteryInfo();
 
   Future<bool> getBindState();
 

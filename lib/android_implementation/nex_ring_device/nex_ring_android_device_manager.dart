@@ -1,4 +1,5 @@
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
@@ -12,6 +13,23 @@ import 'nex_ring_android_device_platform_interface.dart';
 class NexRingAndroidDeviceManager extends NexRingAndroidDevicePlatform {
   final MethodChannel _methodChannel =
       const MethodChannel(NexRingConstants.methodChannelName);
+  final EventChannel _eventChannel = const EventChannel(NexRingConstants.eventChannelNameDeviceManager);
+
+  final StreamController<BatteryInfo> _batteryInfoController = StreamController();
+
+  NexRingAndroidDeviceManager() {
+    _eventChannel.receiveBroadcastStream().listen((r) {
+      final json = jsonDecode(r);
+      final action = json['action'];
+      final data = json['data'];
+      if(action == "batteryInfo") {
+        _batteryInfoController.sink.add(BatteryInfo.fromJson(data));
+      }
+    });
+  }
+
+  @override
+  Stream<BatteryInfo> get batteryInfoStream => _batteryInfoController.stream;
 
   @override
   Future<bool> bind() async =>
@@ -22,10 +40,9 @@ class NexRingAndroidDeviceManager extends NexRingAndroidDevicePlatform {
       await _methodChannel.invokeMethod(NexRingConstants.android_device_factoryReset);
 
   @override
-  Future<BatteryInfo> getBatteryInfo() async {
-    final res = await _methodChannel
+  void getBatteryInfo() async {
+    _methodChannel
         .invokeMethod(NexRingConstants.android_device_getBatteryInfo);
-    return BatteryInfo.fromJson(jsonDecode(res));
   }
 
   @override

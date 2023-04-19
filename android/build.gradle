@@ -24,7 +24,6 @@ allprojects {
 
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
 
 android {
     compileSdkVersion 33
@@ -48,10 +47,5 @@ android {
 }
 
 dependencies {
-    //Required dependencies for nex ring sdk
-    implementation 'androidx.room:room-runtime:2.5.0'
-    kapt 'androidx.room:room-compiler:2.5.0'
-    implementation 'net.zetetic:android-database-sqlcipher:4.5.3'
-    //nex ring sdk
     implementation 'com.psifiacos:nexring:1.0'
 }

@@ -17,11 +17,28 @@ class PPGReadingsCallbackModel {
 class NexRingAndroidHealthManager extends NexRingAndroidHealthPlatform {
   final MethodChannel _methodChannel =
       const MethodChannel(NexRingConstants.methodChannelName);
-  final EventChannel _eventChannel = const EventChannel(NexRingConstants.eventChannelName);
+  final EventChannel _eventChannel = const EventChannel(NexRingConstants.eventChannelNameHealthManager);
 
   OnPPGReadingsListener? _onPPGReadingsListener;
 
   NexRingAndroidHealthManager() {
+    // _methodChannel.setMethodCallHandler((call) async {
+    //   switch (call.method) {
+    //     case "onTakePPGReadingsCanceled":
+    //       _onPPGReadingsListener?.onPPGReadingsCanceled();
+    //       break;
+    //     case "onTakePPGReadingsStarted":
+    //       _onPPGReadingsListener?.onPPGReadingsStarted();
+    //       break;
+    //     case "onCallbackPPGReadings":
+    //       final data = jsonDecode(call.arguments)['data'];
+    //       _onPPGReadingsListener?.onPPGReadingsCallback(
+    //           PPGReadingsState.values[data['state']],
+    //           data['spo2'],
+    //           data['heartRate']);
+    //       break;
+    //   }
+    // });
     _eventChannel
         .receiveBroadcastStream()
         .listen((r) {

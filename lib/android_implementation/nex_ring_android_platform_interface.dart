@@ -25,13 +25,13 @@ abstract class NexRingAndroidPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  static NexRingAndroidDevicePlatform get deviceApi => NexRingAndroidDevicePlatform.instance;
+  NexRingAndroidDevicePlatform get deviceApi => NexRingAndroidDevicePlatform.instance;
 
-  static NexRingAndroidHealthPlatform get healthApi => NexRingAndroidHealthPlatform.instance;
+  NexRingAndroidHealthPlatform get healthApi => NexRingAndroidHealthPlatform.instance;
 
-  static NexRingAndroidUpgradePlatform get upgradeApi => NexRingAndroidUpgradePlatform.instance;
+  NexRingAndroidUpgradePlatform get upgradeApi => NexRingAndroidUpgradePlatform.instance;
 
-  static NexRingAndroidSleepPlatform get sleepApi => NexRingAndroidSleepPlatform.instance;
+  NexRingAndroidSleepPlatform get sleepApi => NexRingAndroidSleepPlatform.instance;
 
   Future<bool> isBleSupported();
 
@@ -53,4 +53,10 @@ abstract class NexRingAndroidPlatform extends PlatformInterface {
   void stopBleConnectionListener();
 
   Future<BluetoothDevice?> getConnectedDevice();
+
+  void clearBtGatt();
+
+  void unregisterRingService();
+
+  Future<bool> isRingServiceRegistered();
 }

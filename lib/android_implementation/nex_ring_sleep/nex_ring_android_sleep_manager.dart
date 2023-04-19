@@ -12,11 +12,34 @@ import 'nex_ring_android_sleep_platform_interface.dart';
 class NexRingAndroidSleepManager extends NexRingAndroidSleepPlatform {
   final MethodChannel _methodChannel =
       const MethodChannel(NexRingConstants.methodChannelName);
-  final EventChannel _eventChannel = const EventChannel(NexRingConstants.eventChannelName);
+  final EventChannel _eventChannel = const EventChannel(NexRingConstants.eventChannelNameSleepManager);
 
   OnSleepDataLoadListener? _onSleepDataLoadListener;
 
   NexRingAndroidSleepManager() {
+    // _methodChannel.setMethodCallHandler((call) async {
+    //   final data = jsonDecode(call.arguments)['data'];
+    //   switch(call.method) {
+    //     case "onSyncDataFromDevice":
+    //       final state = data['state'];
+    //       _onSleepDataLoadListener?.onSyncDataFromDevice(
+    //           state == 0
+    //               ? LoadDataState.start
+    //               : state == 1
+    //               ? LoadDataState.processing
+    //               : LoadDataState.completed,
+    //           data['value']);
+    //       break;
+    //     case "onOutputSleepData":
+    //       final List<SleepData>? sleepData = data == null
+    //           ? null
+    //           : (data as List<dynamic>)
+    //           .map((e) => SleepData.fromJson(e))
+    //           .toList();
+    //       _onSleepDataLoadListener?.onOutputSleepData(sleepData);
+    //       break;
+    //   }
+    // });
     _eventChannel.receiveBroadcastStream().listen((r) {
       final json = jsonDecode(r);
       final action = json['action'];
@@ -138,6 +161,9 @@ class NexRingAndroidSleepManager extends NexRingAndroidSleepPlatform {
   }
 
   @override
-  void syncDataFromDev() async => await _methodChannel
+  void syncDataFromDev() => _methodChannel
       .invokeMethod(NexRingConstants.android_sleep_syncDataFromDev);
+
+  @override
+  Future<bool> checkOnSynced() async => await _methodChannel.invokeMethod(NexRingConstants.android_sleep_checkOnSynced);
 }

@@ -2,7 +2,10 @@
 class NexRingConstants {
 
   static const methodChannelName = 'group.com.psifiacos.aniclient/nex_ring';
-  static const eventChannelName = 'group.com.psifiacos.aniclient/nex_ring/broadcast';
+  static const eventChannelNameBTManager = 'group.com.psifiacos.aniclient/nex_ring/bt/broadcast';
+  static const eventChannelNameSleepManager = 'group.com.psifiacos.aniclient/nex_ring/sleep/broadcast';
+  static const eventChannelNameDeviceManager = 'group.com.psifiacos.aniclient/nex_ring/device/broadcast';
+  static const eventChannelNameHealthManager = 'group.com.psifiacos.aniclient/nex_ring/health/broadcast';
 
   ///Methods BLE
   static const android_bt_getBleState = 'bt_getBleState';
@@ -15,6 +18,9 @@ class NexRingConstants {
   static const android_bt_setBleConnectionListener = 'bt_setBleConnectionListener';
   static const android_bt_stopBleConnectionListener = 'bt_stopBleConnectionListener';
   static const android_bt_getConnectedDevice = 'bt_getConnectedDevice';
+  static const bt_isRingServiceRegistered = "bt_isRingServiceRegistered";
+  static const bt_clearBtGatt = "bt_clearBtGatt";
+  static const bt_unregisterRingService = "bt_unregisterRingService";
 
   ///Methods Device api
   static const android_device_bind = "device_bind";
@@ -48,6 +54,7 @@ class NexRingConstants {
   static const android_sleep_setOnSleepDataLoadListener = "sleep_setOnSleepDataLoadListener";
   static const android_sleep_stopOnSleepDataLoadListener = "sleep_stopOnSleepDataLoadListener";
   static const android_sleep_syncDataFromDev = "sleep_syncDataFromDev";
+  static const android_sleep_checkOnSynced = "sleep_checkOnSynced";
 
   ///Methods Upgrade api
   static const android_upgrade_reboot = "upgrade_reboot";

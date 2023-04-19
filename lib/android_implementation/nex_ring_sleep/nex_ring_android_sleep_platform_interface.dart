@@ -42,4 +42,6 @@ abstract class NexRingAndroidSleepPlatform extends PlatformInterface {
 
   void syncDataFromDev();
 
+  Future<bool> checkOnSynced();
+
 }

@@ -4,7 +4,10 @@ class Constants {
 
     companion object {
         const val methodChannel = "group.com.psifiacos.aniclient/nex_ring"
-        const val eventChannel = "group.com.psifiacos.aniclient/nex_ring/broadcast"
+        const val eventChannelNameBTManager = "group.com.psifiacos.aniclient/nex_ring/bt/broadcast"
+        const val eventChannelNameSleepManager = "group.com.psifiacos.aniclient/nex_ring/sleep/broadcast"
+        const val eventChannelNameDeviceManager = "group.com.psifiacos.aniclient/nex_ring/device/broadcast"
+        const val eventChannelNameHealthManager = "group.com.psifiacos.aniclient/nex_ring/health/broadcast"
 
         //Methods BLE
         const val bt_startBleScan = "bt_startBleScan"
@@ -17,6 +20,9 @@ class Constants {
         const val bt_setBleConnectionListener = "bt_setBleConnectionListener"
         const val bt_stopBleConnectionListener = "bt_stopBleConnectionListener"
         const val bt_getConnectedDevice = "bt_getConnectedDevice"
+        const val bt_isRingServiceRegistered = "bt_isRingServiceRegistered"
+        const val bt_clearBtGatt = "bt_clearBtGatt"
+        const val bt_unregisterRingService = "bt_unregisterRingService"
 
         //Methods Device api
         const val device_bind = "device_bind"
@@ -49,6 +55,7 @@ class Constants {
         const val sleep_setOnSleepDataLoadListener = "sleep_setOnSleepDataLoadListener"
         const val sleep_stopOnSleepDataLoadListener = "sleep_stopOnSleepDataLoadListener"
         const val sleep_syncDataFromDev = "sleep_syncDataFromDev"
+        const val sleep_checkOnSynced = "sleep_checkOnSynced"
         const val sleep_getDayCount = "sleep_getDayCount"
 
         //Methods Upgrade api

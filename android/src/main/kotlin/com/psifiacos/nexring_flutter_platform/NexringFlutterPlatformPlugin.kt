@@ -25,14 +25,14 @@ import android.app.Activity
 import android.app.Application
 
 /** NexringFlutterPlatformPlugin */
-class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
+class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 
   private lateinit var channel : MethodChannel
-  private lateinit var eventChannelHandler: EventChannelHandler
-
+  private lateinit var eventChannelHandlerBT : EventChannelHandler
+  private lateinit var eventChannelHandlerSleep : EventChannelHandler
+  private lateinit var eventChannelHandlerHealth : EventChannelHandler
+  private lateinit var eventChannelHandlerDevice : EventChannelHandler
   private lateinit var context: Context
-  private lateinit var activity: Activity
-  //private lateinit var application: Application
 
   private val bleManager by lazy {
     NexRingManager.init(context as Application)
@@ -56,35 +56,26 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler, ActivityAw
 //    }
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, Constants.methodChannel)
     channel.setMethodCallHandler(this)
-    eventChannelHandler = EventChannelHandler(flutterPluginBinding.binaryMessenger,
-      Constants.eventChannel)
+    eventChannelHandlerBT = EventChannelHandler(flutterPluginBinding.binaryMessenger,
+      Constants.eventChannelNameBTManager)
+    eventChannelHandlerSleep = EventChannelHandler(flutterPluginBinding.binaryMessenger,
+      Constants.eventChannelNameSleepManager)
+    eventChannelHandlerHealth = EventChannelHandler(flutterPluginBinding.binaryMessenger,
+      Constants.eventChannelNameHealthManager)
+    eventChannelHandlerDevice = EventChannelHandler(flutterPluginBinding.binaryMessenger,
+      Constants.eventChannelNameDeviceManager)
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
     channel.setMethodCallHandler(null)
   }
 
-  override fun onDetachedFromActivity() {
-    TODO("Not yet implemented")
-  }
-
-  override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
-    TODO("Not yet implemented")
-  }
-
-  override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-    activity = binding.activity
-  }
-
-  override fun onDetachedFromActivityForConfigChanges() {
-    TODO("Not yet implemented")
-  }
-
   private val onBleConnectionListener = object : OnBleConnectionListener {
     override fun onBleReady() {
       postDelay {
         loge("MainActivityChannel", "onBleReady")
-        eventChannelHandler.sendEvent(JSONObject().apply {
+//        channel.invokeMethod("onBleReady", null)
+        eventChannelHandlerBT.sendEvent(JSONObject().apply {
           put("action", "onBleReady")
         }.toString())
       }
@@ -93,7 +84,13 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler, ActivityAw
     override fun onBleState(state: Int) {
       postDelay {
         loge("MainActivityChannel", "onBleState $state")
-        eventChannelHandler.sendEvent(JSONObject().apply {
+//        channel.invokeMethod("onBleState", when (state) {
+//          BluetoothProfile.STATE_CONNECTING -> 1
+//          BluetoothProfile.STATE_CONNECTED -> 2
+//          BluetoothProfile.STATE_DISCONNECTING -> 3
+//          else -> 0
+//        })
+        eventChannelHandlerBT.sendEvent(JSONObject().apply {
           put("action", "onBleState")
           put("data", when (state) {
             BluetoothProfile.STATE_CONNECTING -> 1
@@ -111,7 +108,18 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler, ActivityAw
     override fun onCallbackPPGReadings(state: Int, spo2: Int?, heartRate: Int) {
       postDelay {
         loge("MainActivityChannel", "onCallbackPPGReadings")
-        eventChannelHandler.sendEvent(JSONObject().apply {
+//        channel.invokeMethod("", JSONObject().apply {
+//          put("data", JSONObject().apply {
+//            put("state", when(state) {
+//              STATE_TAKE_READINGS_NOT_STARTED -> 0
+//              STATE_TAKING_READINGS -> 1
+//              else -> 2
+//            })
+//            put("spo2", spo2)
+//            put("heartRate", heartRate)
+//          })
+//        }.toString())
+        eventChannelHandlerHealth.sendEvent(JSONObject().apply {
           put("action", "onCallbackPPGReadings")
           put("data", JSONObject().apply {
             put("state", when(state) {
@@ -129,7 +137,8 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler, ActivityAw
     override fun onTakePPGReadingsCanceled() {
       postDelay {
         loge("MainActivityChannel", "onTakePPGReadingsCanceled")
-        eventChannelHandler.sendEvent(JSONObject().apply {
+//        channel.invokeMethod("onTakePPGReadingsCanceled", null)
+        eventChannelHandlerHealth.sendEvent(JSONObject().apply {
           put("action", "onTakePPGReadingsCanceled")
         }.toString())
       }
@@ -138,7 +147,8 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler, ActivityAw
     override fun onTakePPGReadingsStarted() {
       postDelay {
         loge("MainActivityChannel", "onTakePPGReadingsStarted")
-        eventChannelHandler.sendEvent(JSONObject().apply {
+//        channel.invokeMethod("onTakePPGReadingsStarted", null)
+        eventChannelHandlerHealth.sendEvent(JSONObject().apply {
           put("action", "onTakePPGReadingsStarted")
         }.toString())
       }
@@ -150,7 +160,17 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler, ActivityAw
     override fun onSyncDataFromDevice(state: Int, progress: Int) {
       postDelay {
         loge("MainActivityChannel", "onSyncDataFromDevice")
-        eventChannelHandler.sendEvent(JSONObject().apply {
+//        channel.invokeMethod("onSyncDataFromDevice", JSONObject().apply {
+//          put("data", JSONObject().apply {
+//            put("state", when(state) {
+//              LOAD_DATA_STATE_START -> 0
+//              LOAD_DATA_STATE_PROCESSING -> 1
+//              else -> 2
+//            })
+//            put("value", progress)
+//          })
+//        }.toString())
+        eventChannelHandlerSleep.sendEvent(JSONObject().apply {
           put("action", "onSyncDataFromDevice")
           put("data", JSONObject().apply {
             put("state", when(state) {
@@ -166,8 +186,60 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler, ActivityAw
 
     override fun onOutputNewSleepData(sleepData: ArrayList<SleepData>?) {
       postDelay {
-        loge("MainActivityChannel", "onOutputSleepData ${sleepData?.size}")
-        eventChannelHandler.sendEvent(JSONObject().apply {
+        loge("MainActivityChannel", "onOutputSleepData")
+//        channel.invokeMethod("onOutputSleepData", JSONObject().apply {
+//          put("data", if(sleepData == null) {
+//            null
+//          } else {
+//            JSONArray().apply {
+//              sleepData.forEach { sleepModel ->
+//                val jsonArraySleepStages = JSONArray().apply {
+//                  sleepModel.sleepStages.forEach {
+//                    val jsonObject = JSONObject()
+//                    jsonObject.put("start", it.startT)
+//                    jsonObject.put("end", it.endT)
+//                    jsonObject.put("state", when(it.state) {
+//                      SLEEP_STATE_WAKE -> 0
+//                      SLEEP_STATE_REM -> 1
+//                      SLEEP_STATE_LIGHT -> 2
+//                      else -> 3
+//                    })
+//                    put(jsonObject)
+//                  }
+//                }
+//                val jsonArraySleepStates = JSONArray().apply {
+//                  sleepModel.sleepStates.forEachIndexed { state, it ->
+//                    val jsonObject = JSONObject()
+//                    jsonObject.put("state", when(state) {
+//                      SLEEP_STATE_WAKE -> 0
+//                      SLEEP_STATE_REM -> 1
+//                      SLEEP_STATE_LIGHT -> 2
+//                      else -> 3
+//                    })
+//                    jsonObject.put("duration", it.duration)
+//                    jsonObject.put("percent", it.percent)
+//                    put(jsonObject)
+//                  }
+//                }
+//                put(JSONObject().apply {
+//                  put("startTs", sleepModel.startTs)
+//                  put("endTs", sleepModel.endTs)
+//                  put("duration", sleepModel.duration)
+//                  put("efficiency", sleepModel.efficiency)
+//                  put("hr", sleepModel.hr)
+//                  put("hrv", sleepModel.hrv)
+//                  put("br", sleepModel.rr)
+//                  put("spo2", sleepModel.spo2)
+//                  put("btMac", sleepModel.btMac)
+//                  put("hrDip", sleepModel.hrDip)
+//                  put("sleepStages", jsonArraySleepStages)
+//                  put("sleepStates", jsonArraySleepStates)
+//                })
+//              }
+//            }
+//          })
+//        }.toString())
+        eventChannelHandlerSleep.sendEvent(JSONObject().apply {
           put("action", "onOutputSleepData")
           put("data", if(sleepData == null) {
             null
@@ -246,6 +318,16 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler, ActivityAw
       Constants.bt_isBleSupported -> {
         val res = bleManager.isSupportBle()
         result.success(res)
+      }
+      Constants.bt_isRingServiceRegistered -> {
+        val res = NexRingManager.get().isRingServiceRegistered()
+        result.success(res)
+      }
+      Constants.bt_unregisterRingService -> {
+        NexRingManager.get().unregisterRingService()
+      }
+      Constants.bt_clearBtGatt -> {
+        NexRingManager.get().setBleGatt(null)
       }
       Constants.bt_getBleState -> {
         val res = bleManager.bleState
@@ -566,6 +648,19 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler, ActivityAw
       Constants.sleep_syncDataFromDev -> {
         NexRingManager.get().sleepApi().syncDataFromDev()
       }
+      Constants.sleep_checkOnSynced -> {
+        NexRingManager.get().sleepApi().setOnSleepDataLoadListener(object : OnSleepDataLoadListener {
+
+          override fun onSyncDataFromDevice(state: Int, progress: Int) {
+            if(state == lib.linktop.nexring.api.LOAD_DATA_STATE_COMPLETED) {
+              result.success(true)
+            }
+          }
+
+          override fun onOutputNewSleepData(sleepData: ArrayList<SleepData>?) {}
+        })
+        NexRingManager.get().sleepApi().syncDataFromDev()
+      }
       Constants.sleep_getDayCount -> {
         NexRingManager.get().sleepApi().getDayCount(call.argument<String>("btMac")!!) {
           result.success(it)
@@ -618,11 +713,16 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler, ActivityAw
       }
       Constants.device_getBatteryInfo -> {
         NexRingManager.get().deviceApi().getBatteryInfo {
-          result.success(JSONObject().apply {
-            put("voltage", it.voltage)
-            put("level", it.level)
-            put("state", if(it.state == BATTERY_STATE_DISCHARGING) 0 else 1)
-          }.toString())
+          postDelay {
+            eventChannelHandlerDevice.sendEvent(JSONObject().apply {
+              put("action", "batteryInfo")
+              put("data", JSONObject().apply {
+                put("voltage", it.voltage)
+                put("level", it.level)
+                put("state", if(it.state == BATTERY_STATE_DISCHARGING) 0 else 1)
+              })
+            }.toString())
+          }
         }
       }
       Constants.device_getBindState -> {

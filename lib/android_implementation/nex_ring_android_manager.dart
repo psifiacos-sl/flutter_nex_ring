@@ -12,11 +12,30 @@ import 'nex_ring_android_platform_interface.dart';
 
 class NexRingAndroidManager extends NexRingAndroidPlatform {
   final MethodChannel _methodChannel = const MethodChannel(NexRingConstants.methodChannelName);
-  final EventChannel _eventChannel = const EventChannel(NexRingConstants.eventChannelName);
+  final EventChannel _eventChannel = const EventChannel(NexRingConstants.eventChannelNameBTManager);
 
   OnBleConnectionListener? _bleConnectionListener;
 
   NexRingAndroidManager() {
+    // _methodChannel.setMethodCallHandler((call) async {
+    //   switch (call.method) {
+    //     case "onBleReady":
+    //       _bleConnectionListener?.onBleReady();
+    //       break;
+    //     case "onBleState":
+    //       final data = call.arguments;
+    //       _bleConnectionListener?.onBleState(data == 0
+    //           ? BleState.disconnected
+    //           : data == 1
+    //           ? BleState.connecting
+    //           : data == 2
+    //           ? BleState.connected
+    //           : data == 3
+    //           ? BleState.disconnecting
+    //           : BleState.notSupported);
+    //       break;
+    //   }
+    // });
     _eventChannel.receiveBroadcastStream().listen((r) {
       final json = jsonDecode(r);
       final action = json['action'];
@@ -120,5 +139,18 @@ class NexRingAndroidManager extends NexRingAndroidPlatform {
   Future<BluetoothDevice?> getConnectedDevice() async {
     final res = await _methodChannel.invokeMethod(NexRingConstants.android_bt_getConnectedDevice);
     return res != null ? BluetoothDevice.fromJson(jsonDecode(res)) : null;
+  }
+
+  @override
+  void clearBtGatt() {
+    _methodChannel.invokeMethod(NexRingConstants.bt_clearBtGatt);
+  }
+
+  @override
+  Future<bool> isRingServiceRegistered() async => await _methodChannel.invokeMethod(NexRingConstants.bt_isRingServiceRegistered);
+
+  @override
+  void unregisterRingService() {
+    _methodChannel.invokeMethod(NexRingConstants.bt_unregisterRingService);
   }
 }

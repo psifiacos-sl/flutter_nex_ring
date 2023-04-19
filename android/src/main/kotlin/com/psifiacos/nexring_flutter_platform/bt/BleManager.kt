@@ -78,6 +78,11 @@ class BleManager(private val context: Context) {
             when (newState) {
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     NexRingManager.get().apply {
+                        healthApi().apply {
+                            if(isTakingPPGReadings()) {
+                                cancelTakePPGReadings();
+                            }
+                        }
                         setBleGatt(null)
                         unregisterRingService()
                     }
