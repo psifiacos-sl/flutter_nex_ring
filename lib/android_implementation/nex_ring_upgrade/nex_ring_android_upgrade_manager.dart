@@ -8,7 +8,7 @@ import 'nex_ring_android_upgrade_platform_interface.dart';
 
 class NexRingAndroidUpgradeManager extends NexRingAndroidUpgradePlatform {
   final MethodChannel _methodChannel =
-      const MethodChannel(NexRingConstants.methodChannelName);
+      const MethodChannel(NexRingConstants.methodChannelUpgrade);
 
 
 

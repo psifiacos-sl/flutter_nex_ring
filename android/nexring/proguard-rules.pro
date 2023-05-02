@@ -19,3 +19,14 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-dontwarn androidx.**
+
+-keep, includedescriptorclasses class lib.linktop.** { *; }
+-keep, includedescriptorclasses interface lib.linktop.** { *; }
+
+-keep, includedescriptorclasses class lib.nexvoo.** { *; }
+-keep, includedescriptorclasses interface lib.nexvoo.** { *; }
+
+-keep, includedescriptorclasses class net.sqlcipher.** { *; }
+-keep, includedescriptorclasses interface net.sqlcipher.** { *; }

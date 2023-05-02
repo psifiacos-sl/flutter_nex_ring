@@ -11,7 +11,7 @@ import 'nex_ring_android_platform_interface.dart';
 
 
 class NexRingAndroidManager extends NexRingAndroidPlatform {
-  final MethodChannel _methodChannel = const MethodChannel(NexRingConstants.methodChannelName);
+  final MethodChannel _methodChannel = const MethodChannel(NexRingConstants.methodChannelBT);
   final EventChannel _eventChannel = const EventChannel(NexRingConstants.eventChannelNameBTManager);
 
   OnBleConnectionListener? _bleConnectionListener;

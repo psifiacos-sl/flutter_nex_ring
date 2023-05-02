@@ -16,7 +16,7 @@ class PPGReadingsCallbackModel {
 
 class NexRingAndroidHealthManager extends NexRingAndroidHealthPlatform {
   final MethodChannel _methodChannel =
-      const MethodChannel(NexRingConstants.methodChannelName);
+      const MethodChannel(NexRingConstants.methodChannelHealth);
   final EventChannel _eventChannel = const EventChannel(NexRingConstants.eventChannelNameHealthManager);
 
   OnPPGReadingsListener? _onPPGReadingsListener;

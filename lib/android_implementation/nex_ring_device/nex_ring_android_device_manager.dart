@@ -13,7 +13,7 @@ import 'nex_ring_android_device_platform_interface.dart';
 
 class NexRingAndroidDeviceManager extends NexRingAndroidDevicePlatform {
   final MethodChannel _methodChannel =
-      const MethodChannel(NexRingConstants.methodChannelName);
+      const MethodChannel(NexRingConstants.methodChannelDevice);
   final EventChannel _eventChannel = const EventChannel(NexRingConstants.eventChannelNameDeviceManager);
 
   final PublishSubject<BatteryInfo> _batteryInfoController = PublishSubject();

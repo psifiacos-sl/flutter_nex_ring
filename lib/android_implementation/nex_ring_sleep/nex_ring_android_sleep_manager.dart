@@ -11,7 +11,7 @@ import 'nex_ring_android_sleep_platform_interface.dart';
 
 class NexRingAndroidSleepManager extends NexRingAndroidSleepPlatform {
   final MethodChannel _methodChannel =
-      const MethodChannel(NexRingConstants.methodChannelName);
+      const MethodChannel(NexRingConstants.methodChannelSleep);
   final EventChannel _eventChannel = const EventChannel(NexRingConstants.eventChannelNameSleepManager);
 
   OnSleepDataLoadListener? _onSleepDataLoadListener;

@@ -71,7 +71,7 @@ class BleManager(private val context: Context) {
             gatt: BluetoothGatt, status: Int, newState: Int,
         ) {
             super.onConnectionStateChange(gatt, status, newState)
-            loge(
+            logi(
                 tag,
                 "onConnectionStateChange->status:$status, newState:$newState"
             )
@@ -80,7 +80,7 @@ class BleManager(private val context: Context) {
                     NexRingManager.get().apply {
                         healthApi().apply {
                             if(isTakingPPGReadings()) {
-                                cancelTakePPGReadings();
+                                cancelTakePPGReadings()
                             }
                         }
                         setBleGatt(null)
@@ -107,11 +107,11 @@ class BleManager(private val context: Context) {
         @SuppressLint("MissingPermission")
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
             super.onServicesDiscovered(gatt, status)
-            loge(tag, "onServicesDiscovered(), status:${status}")
+            logi(tag, "onServicesDiscovered(), status:${status}")
             // Refresh device cache. This is the safest place to initiate the procedure.
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 NexRingManager.get().setBleGatt(gatt)
-                logi(tag, "onServicesDiscovered(), registerHealthData")
+                logi(tag, "onServicesDiscovered(), setBleGatt")
                 postDelay {
                     NexRingManager.get().registerRingService()
                     logi(tag, "onServiceDiscovered(), ringServiceRegistered")
@@ -131,7 +131,7 @@ class BleManager(private val context: Context) {
             ) {
                 post {
                     //you need to synchronize the timestamp with the device first after
-                    //the the service registration is successful.
+                    //the service registration is successful.
                     logi(tag, "onDescriptionWrite(), timestampSync")
                     NexRingManager.get()
                         .settingsApi()
@@ -150,7 +150,7 @@ class BleManager(private val context: Context) {
 
     @SuppressLint("MissingPermission", "ObsoleteSdkInt")
     private fun connectInterval(device: BluetoothDevice) {
-        loge(tag, "connect gatt to ${device.address}")
+        logi(tag, "connect gatt to ${device.address}")
         bleGatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 //            device.connectGatt(context, false, gattCallback)
             device.connectGatt(context, false, mGattCallback, BluetoothDevice.TRANSPORT_LE)
@@ -190,14 +190,14 @@ class BleManager(private val context: Context) {
 
     @SuppressLint("MissingPermission")
     fun connect(address: String): Boolean {
-        loge("JKL", "Trying to get remote device, $address")
+        logi("JKL", "Trying to get remote device, $address")
         val remoteDevice = mBluetoothAdapter.getRemoteDevice(address)
-        loge("JKL", "connect to remoteDevice by address, ${remoteDevice.address}")
+        logi("JKL", "connect to remoteDevice by address, ${remoteDevice.address}")
         return if (!remoteDevice.address.isNullOrEmpty()) {
             connect(remoteDevice)
             true
         } else {
-            loge("JKL", "reject, because it cannot connect success.")
+            logi("JKL", "reject, because it cannot connect success.")
             false
         }
     }
@@ -206,13 +206,13 @@ class BleManager(private val context: Context) {
         val delayConnect = isScanning
         cancelScan()
         if (delayConnect) {
-            loge("JKL", "connect to ${device.address}, delay 200L")
+            logi("JKL", "connect to ${device.address}, delay 200L")
             postDelay({
-                loge("JKL", "delay finish, connect to ${device.address}")
+                logi("JKL", "delay finish, connect to ${device.address}")
                 connectInterval(device)
             }, 200L)
         } else {
-            loge("JKL", "connect to ${device.address} right now.")
+            logi("JKL", "connect to ${device.address} right now.")
             connectInterval(device)
         }
     }

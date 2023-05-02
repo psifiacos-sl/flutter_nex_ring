@@ -1,7 +1,7 @@
 package com.psifiacos.nexring_flutter_platform.util
 
 import android.util.Log
-import lib.linktop.nexring.BuildConfig
+import com.psifiacos.nexring_flutter_platform.BuildConfig
 import java.util.*
 
 fun todayCalendar(): Calendar =

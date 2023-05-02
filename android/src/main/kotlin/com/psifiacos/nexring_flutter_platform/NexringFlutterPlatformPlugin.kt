@@ -27,7 +27,13 @@ import android.app.Application
 /** NexringFlutterPlatformPlugin */
 class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 
-  private lateinit var channel : MethodChannel
+  private lateinit var channelBT : MethodChannel
+  private lateinit var channelSettings : MethodChannel
+  private lateinit var channelUpgrade : MethodChannel
+  private lateinit var channelDevice : MethodChannel
+  private lateinit var channelHealth : MethodChannel
+  private lateinit var channelSleep : MethodChannel
+
   private lateinit var eventChannelHandlerBT : EventChannelHandler
   private lateinit var eventChannelHandlerSleep : EventChannelHandler
   private lateinit var eventChannelHandlerHealth : EventChannelHandler
@@ -54,8 +60,19 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 //    if (application == null) {
 //      Log.e("onAttachedToEngine", "Fail to resolve Application from Context")
 //    }
-    channel = MethodChannel(flutterPluginBinding.binaryMessenger, Constants.methodChannel)
-    channel.setMethodCallHandler(this)
+    channelBT = MethodChannel(flutterPluginBinding.binaryMessenger, Constants.methodChannelBT)
+    channelBT.setMethodCallHandler(this)
+    channelDevice = MethodChannel(flutterPluginBinding.binaryMessenger, Constants.methodChannelDevice)
+    channelDevice.setMethodCallHandler(this)
+    channelHealth = MethodChannel(flutterPluginBinding.binaryMessenger, Constants.methodChannelHealth)
+    channelHealth.setMethodCallHandler(this)
+    channelSettings = MethodChannel(flutterPluginBinding.binaryMessenger, Constants.methodChannelSettings)
+    channelSettings.setMethodCallHandler(this)
+    channelSleep = MethodChannel(flutterPluginBinding.binaryMessenger, Constants.methodChannelSleep)
+    channelSleep.setMethodCallHandler(this)
+    channelUpgrade = MethodChannel(flutterPluginBinding.binaryMessenger, Constants.methodChannelUpgrade)
+    channelUpgrade.setMethodCallHandler(this)
+
     eventChannelHandlerBT = EventChannelHandler(flutterPluginBinding.binaryMessenger,
       Constants.eventChannelNameBTManager)
     eventChannelHandlerSleep = EventChannelHandler(flutterPluginBinding.binaryMessenger,
@@ -67,13 +84,18 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
-    channel.setMethodCallHandler(null)
+    channelBT.setMethodCallHandler(null)
+    channelDevice.setMethodCallHandler(null)
+    channelHealth.setMethodCallHandler(null)
+    channelSettings.setMethodCallHandler(null)
+    channelSleep.setMethodCallHandler(null)
+    channelUpgrade.setMethodCallHandler(null)
   }
 
   private val onBleConnectionListener = object : OnBleConnectionListener {
     override fun onBleReady() {
       postDelay {
-        loge("MainActivityChannel", "onBleReady")
+        logi("MainActivityChannel", "onBleReady")
 //        channel.invokeMethod("onBleReady", null)
         eventChannelHandlerBT.sendEvent(JSONObject().apply {
           put("action", "onBleReady")
@@ -83,7 +105,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 
     override fun onBleState(state: Int) {
       postDelay {
-        loge("MainActivityChannel", "onBleState $state")
+        logi("MainActivityChannel", "onBleState $state")
 //        channel.invokeMethod("onBleState", when (state) {
 //          BluetoothProfile.STATE_CONNECTING -> 1
 //          BluetoothProfile.STATE_CONNECTED -> 2
@@ -107,7 +129,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 
     override fun onCallbackPPGReadings(state: Int, spo2: Int?, heartRate: Int) {
       postDelay {
-        loge("MainActivityChannel", "onCallbackPPGReadings")
+        logi("MainActivityChannel", "onCallbackPPGReadings")
 //        channel.invokeMethod("", JSONObject().apply {
 //          put("data", JSONObject().apply {
 //            put("state", when(state) {
@@ -136,7 +158,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 
     override fun onTakePPGReadingsCanceled() {
       postDelay {
-        loge("MainActivityChannel", "onTakePPGReadingsCanceled")
+        logi("MainActivityChannel", "onTakePPGReadingsCanceled")
 //        channel.invokeMethod("onTakePPGReadingsCanceled", null)
         eventChannelHandlerHealth.sendEvent(JSONObject().apply {
           put("action", "onTakePPGReadingsCanceled")
@@ -146,7 +168,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 
     override fun onTakePPGReadingsStarted() {
       postDelay {
-        loge("MainActivityChannel", "onTakePPGReadingsStarted")
+        logi("MainActivityChannel", "onTakePPGReadingsStarted")
 //        channel.invokeMethod("onTakePPGReadingsStarted", null)
         eventChannelHandlerHealth.sendEvent(JSONObject().apply {
           put("action", "onTakePPGReadingsStarted")
@@ -159,7 +181,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 
     override fun onSyncDataFromDevice(state: Int, progress: Int) {
       postDelay {
-        loge("MainActivityChannel", "onSyncDataFromDevice")
+        logi("MainActivityChannel", "onSyncDataFromDevice State: $state")
 //        channel.invokeMethod("onSyncDataFromDevice", JSONObject().apply {
 //          put("data", JSONObject().apply {
 //            put("state", when(state) {
@@ -186,7 +208,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 
     override fun onOutputNewSleepData(sleepData: ArrayList<SleepData>?) {
       postDelay {
-        loge("MainActivityChannel", "onOutputSleepData")
+        logi("MainActivityChannel", "onOutputSleepData")
 //        channel.invokeMethod("onOutputSleepData", JSONObject().apply {
 //          put("data", if(sleepData == null) {
 //            null
@@ -353,7 +375,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
                 PRODUCT_COLOR_GOLDEN -> 1
                 else -> 2
               }
-              channel.invokeMethod("onBleScanning", JSONObject().apply {
+              channelBT.invokeMethod("onBleScanning", JSONObject().apply {
                 put("color", color)
                 put("rssi", result.rssi)
                 put("size", result.size)
@@ -371,7 +393,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
             }
 
             override fun onScanFinished() {
-              channel.invokeMethod("onBleScanFinished", null)
+              channelBT.invokeMethod("onBleScanFinished", null)
             }
           })
       }
@@ -445,7 +467,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
               if(screenshot >= seconds) {
                 NexRingManager.get().healthApi().cancelTakePPGReadings()
               } else {
-                Log.e("TakePPGOneMinute", "onTakePPGReadings: HR: $heartRate BPM, OX: $spo2 %, RR: $rr, Instant: $screenshot")
+                logi("TakePPGOneMinute", "onTakePPGReadings: HR: $heartRate BPM, OX: $spo2 %, RR: $rr, Instant: $screenshot")
                 values.add(PPGReadExtra(heartRate, spo2, rr, screenshot))
               }
             }
@@ -453,7 +475,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 
           override fun onTakePPGReadingsCanceled() {
             end = System.currentTimeMillis()
-            Log.e("TakePPGOneMinute", "onTakePPGReadingsCanceled")
+            logi("TakePPGOneMinute", "onTakePPGReadingsCanceled")
             result.success(JSONObject().apply {
               put("start", start)
               put("end", end)
@@ -472,7 +494,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 
           override fun onTakePPGReadingsStarted() {
             start = System.currentTimeMillis()
-            Log.e("TakePPGOneMinute", "onTakePPGReadingsStarted")
+            logi("TakePPGOneMinute", "onTakePPGReadingsStarted")
           }
         })
         NexRingManager.get().healthApi().takePPGReadings(false)
@@ -646,12 +668,14 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
         NexRingManager.get().sleepApi().setOnSleepDataLoadListener(null)
       }
       Constants.sleep_syncDataFromDev -> {
+        logi("MainActivity", "syncDataFromDev()")
         NexRingManager.get().sleepApi().syncDataFromDev()
       }
       Constants.sleep_checkOnSynced -> {
         NexRingManager.get().sleepApi().setOnSleepDataLoadListener(object : OnSleepDataLoadListener {
 
           override fun onSyncDataFromDevice(state: Int, progress: Int) {
+            logi("MainActivity", "checkOnSynced $state")
             if(state == lib.linktop.nexring.api.LOAD_DATA_STATE_COMPLETED) {
               result.success(true)
             }
@@ -749,7 +773,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
   private fun settingsApiMethodCallHandler(call: MethodCall, result: MethodChannel.Result) {
     when(call.method) {
       Constants.settings_timestampSync -> {
-        NexRingManager.get().settingsApi().timestampSync(call.argument<Long>("ts")!!) {
+        NexRingManager.get().settingsApi().timestampSync(call.argument<Long>("ts") ?: System.currentTimeMillis()) {
           result.success(it == 0)
         }
       }

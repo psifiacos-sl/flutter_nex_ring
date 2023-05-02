@@ -3,7 +3,12 @@ package com.psifiacos.nexring_flutter_platform.util
 class Constants {
 
     companion object {
-        const val methodChannel = "group.com.psifiacos.aniclient/nex_ring"
+        const val methodChannelBT = "group.com.psifiacos.aniclient/nex_ring/bt"
+        const val methodChannelSleep = "group.com.psifiacos.aniclient/nex_ring/sleep"
+        const val methodChannelHealth = "group.com.psifiacos.aniclient/nex_ring/health"
+        const val methodChannelSettings = "group.com.psifiacos.aniclient/nex_ring/settings"
+        const val methodChannelUpgrade = "group.com.psifiacos.aniclient/nex_ring/upgrade"
+        const val methodChannelDevice = "group.com.psifiacos.aniclient/nex_ring/device"
         const val eventChannelNameBTManager = "group.com.psifiacos.aniclient/nex_ring/bt/broadcast"
         const val eventChannelNameSleepManager = "group.com.psifiacos.aniclient/nex_ring/sleep/broadcast"
         const val eventChannelNameDeviceManager = "group.com.psifiacos.aniclient/nex_ring/device/broadcast"

@@ -1,5 +1,6 @@
 
 import 'package:flutter/cupertino.dart';
+import 'package:nexring_flutter_platform/android_implementation/nex_ring_settings/nex_ring_android_settings_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import '../domain/ble_device.dart';
 import '../domain/nex_ring_callbacks.dart';
@@ -32,6 +33,8 @@ abstract class NexRingAndroidPlatform extends PlatformInterface {
   NexRingAndroidUpgradePlatform get upgradeApi => NexRingAndroidUpgradePlatform.instance;
 
   NexRingAndroidSleepPlatform get sleepApi => NexRingAndroidSleepPlatform.instance;
+
+  NexRingAndroidSettingsPlatform get settingsApi => NexRingAndroidSettingsPlatform.instance;
 
   Future<bool> isBleSupported();
 

@@ -22,6 +22,9 @@ allprojects {
     }
 }
 
+//Required for kapt()
+apply plugin: 'kotlin-kapt'
+//...
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
@@ -47,5 +50,11 @@ android {
 }
 
 dependencies {
+    //Required dependencies for nex ring sdk
+    implementation 'androidx.room:room-runtime:2.5.0'
+    kapt 'androidx.room:room-compiler:2.5.0'
+    implementation 'net.zetetic:android-database-sqlcipher:4.5.3'
+    implementation "androidx.sqlite:sqlite:2.1.0"
+    //...
     implementation 'com.psifiacos:nexring:1.0'
 }

@@ -1,7 +1,14 @@
 
 class NexRingConstants {
 
-  static const methodChannelName = 'group.com.psifiacos.aniclient/nex_ring';
+  static const methodChannelBT = "group.com.psifiacos.aniclient/nex_ring/bt";
+  static const methodChannelSleep = "group.com.psifiacos.aniclient/nex_ring/sleep";
+  static const methodChannelHealth = "group.com.psifiacos.aniclient/nex_ring/health";
+  static const methodChannelSettings = "group.com.psifiacos.aniclient/nex_ring/settings";
+  static const methodChannelUpgrade = "group.com.psifiacos.aniclient/nex_ring/upgrade";
+  static const methodChannelDevice = "group.com.psifiacos.aniclient/nex_ring/device";
+
+
   static const eventChannelNameBTManager = 'group.com.psifiacos.aniclient/nex_ring/bt/broadcast';
   static const eventChannelNameSleepManager = 'group.com.psifiacos.aniclient/nex_ring/sleep/broadcast';
   static const eventChannelNameDeviceManager = 'group.com.psifiacos.aniclient/nex_ring/device/broadcast';
@@ -59,6 +66,9 @@ class NexRingConstants {
   ///Methods Upgrade api
   static const android_upgrade_reboot = "upgrade_reboot";
   static const android_upgrade_upgrade = "upgrade_upgrade";
+
+  ///Methods Settings api
+  static const android_settings_timestampSync = "settings_timestampSync";
 }
 
 enum BleState { notSupported, disconnected, connecting, connected, disconnecting }
