@@ -23,6 +23,7 @@ import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import android.content.Context
 import android.app.Activity
 import android.app.Application
+import kotlinx.coroutines.*
 
 /** NexringFlutterPlatformPlugin */
 class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
@@ -39,6 +40,13 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
   private lateinit var eventChannelHandlerHealth : EventChannelHandler
   private lateinit var eventChannelHandlerDevice : EventChannelHandler
   private lateinit var context: Context
+
+  private val handler = CoroutineExceptionHandler {_, e ->
+    loge("NexRingPluginDispatcher", "${e.message}")
+  }
+  private val scope by lazy {
+    CoroutineScope(Dispatchers.IO + handler)
+  }
 
   private val bleManager by lazy {
     NexRingManager.init(context as Application)
@@ -81,6 +89,8 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
       Constants.eventChannelNameHealthManager)
     eventChannelHandlerDevice = EventChannelHandler(flutterPluginBinding.binaryMessenger,
       Constants.eventChannelNameDeviceManager)
+    context.registerReceiver(bleManager.mReceiver, android.content.IntentFilter(
+      android.bluetooth.BluetoothAdapter.ACTION_STATE_CHANGED))
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
@@ -668,8 +678,10 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
         NexRingManager.get().sleepApi().setOnSleepDataLoadListener(null)
       }
       Constants.sleep_syncDataFromDev -> {
-        logi("MainActivity", "syncDataFromDev()")
-        NexRingManager.get().sleepApi().syncDataFromDev()
+        scope.launch {
+          logi("MainActivity", "syncDataFromDev()")
+          NexRingManager.get().sleepApi().syncDataFromDev()
+        }
       }
       Constants.sleep_checkOnSynced -> {
         NexRingManager.get().sleepApi().setOnSleepDataLoadListener(object : OnSleepDataLoadListener {

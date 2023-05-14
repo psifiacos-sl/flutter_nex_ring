@@ -50,6 +50,7 @@ android {
 }
 
 dependencies {
+    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
     //Required dependencies for nex ring sdk
     implementation 'androidx.room:room-runtime:2.5.0'
     kapt 'androidx.room:room-compiler:2.5.0'

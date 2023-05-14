@@ -5,7 +5,9 @@ import android.bluetooth.*
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import com.psifiacos.nexring_flutter_platform.util.*
@@ -64,6 +66,28 @@ class BleManager(private val context: Context) {
     var bleState = 0
     var connectedDevice: BluetoothDevice? = null
 
+    val mReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if(BluetoothAdapter.ACTION_STATE_CHANGED == intent?.action) {
+                if(intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1) == BluetoothAdapter.STATE_OFF &&
+                    connectedDevice != null) {
+                    bleState = BluetoothProfile.STATE_DISCONNECTED
+                    postBleState()
+                    NexRingManager.get().apply {
+                        healthApi().apply {
+                            if(isTakingPPGReadings()) {
+                                setOnPGReadingsListener(null)
+                                cancelTakePPGReadings()
+                            }
+                        }
+                        unregisterRingService()
+                    }
+                    connectedDevice = null
+                }
+            }
+        }
+    }
+
     private val mGattCallback = object : NexRingBluetoothGattCallback(NexRingManager.get()) {
 
         @SuppressLint("MissingPermission")
@@ -77,9 +101,12 @@ class BleManager(private val context: Context) {
             )
             when (newState) {
                 BluetoothProfile.STATE_DISCONNECTED -> {
+                    bleState = BluetoothProfile.STATE_DISCONNECTED
+                    postBleState()
                     NexRingManager.get().apply {
                         healthApi().apply {
                             if(isTakingPPGReadings()) {
+                                setOnPGReadingsListener(null)
                                 cancelTakePPGReadings()
                             }
                         }
@@ -88,8 +115,6 @@ class BleManager(private val context: Context) {
                     }
                     connectedDevice = null
                     gatt.close()
-                    bleState = BluetoothProfile.STATE_DISCONNECTED
-                    postBleState()
                 }
                 BluetoothProfile.STATE_CONNECTING -> {
                     bleState = BluetoothProfile.STATE_CONNECTING
