@@ -1,7 +1,7 @@
 name: nexring_flutter_platform
 description: A new Flutter plugin project.
-version: 0.0.2
-homepage:
+version: 0.0.3
+homepage: "Home"
 
 environment:
   sdk: '>=2.19.0 <3.0.0'
