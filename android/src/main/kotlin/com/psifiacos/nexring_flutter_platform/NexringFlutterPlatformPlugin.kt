@@ -54,6 +54,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
   }
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+    logi("NexRingFlutterPlugin", "onAttachedToEngine")
     context = flutterPluginBinding.applicationContext
 //    while (context != null) {
 //      Log.w("onAttachedToEngine", "Trying to resolve Application from Context: ${context.javaClass.name}")
@@ -89,11 +90,21 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
       Constants.eventChannelNameHealthManager)
     eventChannelHandlerDevice = EventChannelHandler(flutterPluginBinding.binaryMessenger,
       Constants.eventChannelNameDeviceManager)
-    context.registerReceiver(bleManager.mReceiver, android.content.IntentFilter(
-      android.bluetooth.BluetoothAdapter.ACTION_STATE_CHANGED))
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+    logi("NexRingFlutterPlugin", "onDetachedFromEngine")
+    NexRingManager.get().apply {
+      healthApi().apply {
+        setOnPGReadingsListener(null)
+        cancelTakePPGReadings()
+      }
+      sleepApi().setOnSleepDataLoadListener(null)
+      sleepApi()
+      setBleGatt(null)
+    }
+    bleManager.removeOnBleConnectionListener(onBleConnectionListener)
+    NexRingManager.get().unregisterRingService()
     channelBT.setMethodCallHandler(null)
     channelDevice.setMethodCallHandler(null)
     channelHealth.setMethodCallHandler(null)

@@ -67,6 +67,8 @@ class BleManager(private val context: Context) {
     var connectedDevice: BluetoothDevice? = null
 
     val mReceiver = object : BroadcastReceiver() {
+
+        @SuppressLint("MissingPermission")
         override fun onReceive(context: Context?, intent: Intent?) {
             if(BluetoothAdapter.ACTION_STATE_CHANGED == intent?.action) {
                 if(intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1) == BluetoothAdapter.STATE_OFF &&
@@ -75,14 +77,14 @@ class BleManager(private val context: Context) {
                     postBleState()
                     NexRingManager.get().apply {
                         healthApi().apply {
-                            if(isTakingPPGReadings()) {
-                                setOnPGReadingsListener(null)
-                                cancelTakePPGReadings()
-                            }
+                            setOnPGReadingsListener(null)
+                            cancelTakePPGReadings()
                         }
+                        setBleGatt(null)
                         unregisterRingService()
                     }
                     connectedDevice = null
+                    bleGatt?.close()
                 }
             }
         }
@@ -105,10 +107,8 @@ class BleManager(private val context: Context) {
                     postBleState()
                     NexRingManager.get().apply {
                         healthApi().apply {
-                            if(isTakingPPGReadings()) {
-                                setOnPGReadingsListener(null)
-                                cancelTakePPGReadings()
-                            }
+                            setOnPGReadingsListener(null)
+                            cancelTakePPGReadings()
                         }
                         setBleGatt(null)
                         unregisterRingService()
@@ -165,6 +165,13 @@ class BleManager(private val context: Context) {
                             synchronized(mOnBleConnectionListeners) {
                                 mOnBleConnectionListeners.forEach {
                                     it.onBleReady()
+                                    try {
+                                        context.unregisterReceiver(mReceiver)
+                                    } catch (e: IllegalArgumentException) {
+                                        logi(tag, "No bleManager.mReceiver registered")
+                                    }
+                                    context.registerReceiver(mReceiver, android.content.IntentFilter(
+                                        BluetoothAdapter.ACTION_STATE_CHANGED))
                                 }
                             }
                         }
