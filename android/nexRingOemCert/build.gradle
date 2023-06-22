@@ -1,0 +1,2 @@
+configurations.maybeCreate("default")
+artifacts.add("default", file('OemCertiLib_v1.0.0_release.aar'))

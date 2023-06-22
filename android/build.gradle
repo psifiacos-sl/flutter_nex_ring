@@ -63,5 +63,6 @@ dependencies {
     implementation 'net.zetetic:android-database-sqlcipher:4.5.3'
     implementation "androidx.sqlite:sqlite:2.1.0"
     //...
-    implementation files('libs/NexRingSDK_v1.2.0_release.aar', 'libs/OemCertiLib_v1.0.0_release.aar')
+    api project(":nexRingSdk")
+    api project(":nexRingOemCert")
 }
