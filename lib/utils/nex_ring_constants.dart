@@ -14,6 +14,10 @@ class NexRingConstants {
   static const eventChannelNameDeviceManager = 'group.com.psifiacos.aniclient/nex_ring/device/broadcast';
   static const eventChannelNameHealthManager = 'group.com.psifiacos.aniclient/nex_ring/health/broadcast';
 
+  static const init = "init";
+  static const dispose = "dispose";
+  static const isInitialized = "isInitialized";
+
   ///Methods BLE
   static const android_bt_getBleState = 'bt_getBleState';
   static const android_bt_isBleSupported = 'bt_isBleSupported';
@@ -81,6 +85,6 @@ enum BatteryState { discharging, charging }
 
 enum LoadDataState { start, processing, completed }
 
-enum SleepStageEnum { wake, rem, light, deep }
+enum SleepStageEnum { wake, rem, light, deep, nap }
 
 enum PPGReadingsState { notStarted, reading, readingsValid }

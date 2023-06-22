@@ -6,5 +6,8 @@ data class BleDevice(
     val device: BluetoothDevice,
     val color: Int,
     val size: Int,
-    var rssi: Int
+    val batteryState: Int? = null,
+    val batteryLevel: Int? = null,
+    val generation: Int? = null,
+    var rssi: Int,
 )

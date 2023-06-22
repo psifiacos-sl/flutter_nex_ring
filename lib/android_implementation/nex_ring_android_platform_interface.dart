@@ -36,6 +36,12 @@ abstract class NexRingAndroidPlatform extends PlatformInterface {
 
   NexRingAndroidSettingsPlatform get settingsApi => NexRingAndroidSettingsPlatform.instance;
 
+  Future<bool> get isInitialized;
+
+  Future<bool> initSDK();
+
+  Future<bool> disposeSDK();
+
   Future<bool> isBleSupported();
 
   Future<BleState> getBleState();

@@ -1,10 +1,8 @@
 package com.psifiacos.nexring_flutter_platform
 
-import androidx.annotation.NonNull
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothProfile
-import android.util.Log
 import com.psifiacos.nexring_flutter_platform.bt.*
 import com.psifiacos.nexring_flutter_platform.util.*
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -18,10 +16,7 @@ import org.json.JSONObject
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.properties.Delegates
-import io.flutter.embedding.engine.plugins.activity.ActivityAware
-import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import android.content.Context
-import android.app.Activity
 import android.app.Application
 import kotlinx.coroutines.*
 
@@ -39,7 +34,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
   private lateinit var eventChannelHandlerSleep : EventChannelHandler
   private lateinit var eventChannelHandlerHealth : EventChannelHandler
   private lateinit var eventChannelHandlerDevice : EventChannelHandler
-  private lateinit var context: Context
+  private var context: Context? = null
 
   private val handler = CoroutineExceptionHandler {_, e ->
     loge("NexRingPluginDispatcher", "${e.message}")
@@ -48,12 +43,46 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
     CoroutineScope(Dispatchers.IO + handler)
   }
 
-  private val bleManager by lazy {
-    NexRingManager.init(context as Application)
-    BleManager(context)
+  companion object {
+
+    private var bleManager: BleManager? = null
+    fun isInitialized(): Boolean {
+      return bleManager != null
+    }
   }
 
-  override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+  private fun initNexRingSDK(): Boolean {
+    if (!isInitialized()) {
+      bleManager = lazy {
+        NexRingManager.init(context as Application)
+        BleManager(context as Application)
+      }.value
+      logi("NexRingFlutterPlugin", "Init SDK")
+      return true
+    }
+    return false
+  }
+
+  private fun disposeNexRingSDK(): Boolean {
+    if(isInitialized()) {
+      NexRingManager.get().sleepApi().setOnSleepDataLoadListener(null)
+      bleManager!!.cancelScan(notifiy = false)
+      bleManager!!.removeOnBleConnectionListener(onBleConnectionListener)
+      try {
+        context!!.unregisterReceiver(bleManager!!.mReceiver)
+      } catch (e: IllegalArgumentException) {
+        logi("NexRingFlutterPlugin", "No bleManager.mReceiver registered")
+      }
+      bleManager!!.disconnect()
+      bleManager = null
+      NexRingManager.destroy()
+      logi("NexRingFlutterPlugin", "Dispose SDK Completed")
+      return true
+    }
+    return false
+  }
+
+  override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     logi("NexRingFlutterPlugin", "onAttachedToEngine")
     context = flutterPluginBinding.applicationContext
 //    while (context != null) {
@@ -92,25 +121,16 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
       Constants.eventChannelNameDeviceManager)
   }
 
-  override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+  override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     logi("NexRingFlutterPlugin", "onDetachedFromEngine")
-    NexRingManager.get().apply {
-      healthApi().apply {
-        setOnPGReadingsListener(null)
-        cancelTakePPGReadings()
-      }
-      sleepApi().setOnSleepDataLoadListener(null)
-      sleepApi()
-      setBleGatt(null)
-    }
-    bleManager.removeOnBleConnectionListener(onBleConnectionListener)
-    NexRingManager.get().unregisterRingService()
+    disposeNexRingSDK()
     channelBT.setMethodCallHandler(null)
     channelDevice.setMethodCallHandler(null)
     channelHealth.setMethodCallHandler(null)
     channelSettings.setMethodCallHandler(null)
     channelSleep.setMethodCallHandler(null)
     channelUpgrade.setMethodCallHandler(null)
+    context = null
   }
 
   private val onBleConnectionListener = object : OnBleConnectionListener {
@@ -245,7 +265,8 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 //                      SLEEP_STATE_WAKE -> 0
 //                      SLEEP_STATE_REM -> 1
 //                      SLEEP_STATE_LIGHT -> 2
-//                      else -> 3
+//                      SLEEP_STATE_DEEP -> 3
+//                      else -> 4
 //                    })
 //                    put(jsonObject)
 //                  }
@@ -257,7 +278,8 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 //                      SLEEP_STATE_WAKE -> 0
 //                      SLEEP_STATE_REM -> 1
 //                      SLEEP_STATE_LIGHT -> 2
-//                      else -> 3
+//                      SLEEP_STATE_DEEP -> 3
+//                      else -> 4
 //                    })
 //                    jsonObject.put("duration", it.duration)
 //                    jsonObject.put("percent", it.percent)
@@ -298,7 +320,8 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
                       SLEEP_STATE_WAKE -> 0
                       SLEEP_STATE_REM -> 1
                       SLEEP_STATE_LIGHT -> 2
-                      else -> 3
+                      SLEEP_STATE_DEEP -> 3
+                      else -> 4
                     })
                     put(jsonObject)
                   }
@@ -310,7 +333,8 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
                       SLEEP_STATE_WAKE -> 0
                       SLEEP_STATE_REM -> 1
                       SLEEP_STATE_LIGHT -> 2
-                      else -> 3
+                      SLEEP_STATE_DEEP -> 3
+                      else -> 4
                     })
                     jsonObject.put("duration", it.duration)
                     jsonObject.put("percent", it.percent)
@@ -339,8 +363,16 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
     }
   }
 
-  override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
-    if(call.method.startsWith("bt_")) {
+  override fun onMethodCall(call: MethodCall, result: Result) {
+    if (call.method == Constants.init) {
+      result.success(initNexRingSDK())
+    } else if (call.method == Constants.dispose) {
+      result.success(disposeNexRingSDK())
+    } else if (call.method == Constants.isInitialized) {
+      result.success(isInitialized())
+    } else if (!isInitialized()) {
+      result.error("Bad State", "SDK not initialized", "Please call initSDK() first")
+    } else if(call.method.startsWith("bt_")) {
       btMethodCallHandler(call, result)
     } else if(call.method.startsWith("device_")) {
       deviceApiMethodCallHandler(call, result)
@@ -356,10 +388,10 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
   }
 
   @SuppressLint("MissingPermission")
-  private fun btMethodCallHandler(call: MethodCall, result: MethodChannel.Result) {
+  private fun btMethodCallHandler(call: MethodCall, result: Result) {
     when(call.method) {
       Constants.bt_isBleSupported -> {
-        val res = bleManager.isSupportBle()
+        val res = bleManager!!.isSupportBle()
         result.success(res)
       }
       Constants.bt_isRingServiceRegistered -> {
@@ -373,7 +405,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
         NexRingManager.get().setBleGatt(null)
       }
       Constants.bt_getBleState -> {
-        val res = bleManager.bleState
+        val res = bleManager!!.bleState
         result.success(
           when (res) {
             BluetoothProfile.STATE_CONNECTING -> 1
@@ -384,11 +416,11 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
         )
       }
       Constants.bt_isBleScanning -> {
-        val res = bleManager.isScanning
+        val res = bleManager!!.isScanning
         result.success(res)
       }
       Constants.bt_startBleScan -> {
-        bleManager.startScan(20 * 1000L,
+        bleManager!!.startScan(20 * 1000L,
           object : OnBleScanCallback {
             override fun onScanning(result: BleDevice) {
               val color: Int = when(result.color) {
@@ -399,6 +431,9 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
               channelBT.invokeMethod("onBleScanning", JSONObject().apply {
                 put("color", color)
                 put("rssi", result.rssi)
+                put("generation", result.generation)
+                put("batteryLevel", result.batteryLevel)
+                put("batteryState", result.batteryState)
                 put("size", result.size)
                 put("device", JSONObject().apply {
                   put("address", result.device.address)
@@ -419,24 +454,24 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
           })
       }
       Constants.bt_setBleConnectionListener -> {
-        bleManager.addOnBleConnectionListener(onBleConnectionListener)
+        bleManager!!.addOnBleConnectionListener(onBleConnectionListener)
       }
       Constants.bt_stopBleConnectionListener -> {
-        bleManager.removeOnBleConnectionListener(onBleConnectionListener)
+        bleManager!!.removeOnBleConnectionListener(onBleConnectionListener)
       }
       Constants.bt_stopBleScan -> {
-        bleManager.cancelScan()
+        bleManager!!.cancelScan()
       }
       Constants.bt_connectBleDevice -> {
-        val res = bleManager.connect(call.argument<String>("device")!!)
+        val res = bleManager!!.connect(call.argument<String>("device")!!)
         result.success(res)
       }
       Constants.bt_disconnectBleDevice -> {
-        bleManager.disconnect()
+        bleManager!!.disconnect()
         result.success(true)
       }
       Constants.bt_getConnectedDevice -> {
-        val res = bleManager.connectedDevice
+        val res = bleManager!!.connectedDevice
         result.success(res?.let { JSONObject().apply {
           put("address", res.address)
           put("type", res.type)
@@ -454,7 +489,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
     }
   }
 
-  private fun healthApiMethodCallHandler(call: MethodCall, result: MethodChannel.Result) {
+  private fun healthApiMethodCallHandler(call: MethodCall, result: Result) {
     when(call.method) {
       Constants.health_getTotalSteps -> {
         NexRingManager.get().healthApi().getTotalSteps { steps ->
@@ -474,7 +509,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
         NexRingManager.get().healthApi().takePPGReadings(call.argument<Boolean>("onlyHr") ?: false)
       }
       Constants.health_takePPGReadingsByTime -> {
-        val seconds = call.argument<Int>("seconds")!!
+        val seconds: Double = call.argument<Int>("seconds")!! * 1.0
         val values = ArrayList<PPGReadExtra>()
         var screenshot = 0.0
         var start by Delegates.notNull<Long>()
@@ -535,7 +570,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
     }
   }
 
-  private fun sleepApiMethodCallHandler(call: MethodCall, result: MethodChannel.Result) {
+  private fun sleepApiMethodCallHandler(call: MethodCall, result: Result) {
     when(call.method) {
       Constants.sleep_getTotalSteps -> {
         NexRingManager.get().sleepApi().getTotalSteps(
@@ -554,9 +589,9 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
         }
       }
       Constants.sleep_getFingerTemperatureList -> {
-        val startTs = call.argument<Long>("startTs")!!
-        val endTs = call.argument<Long>("endTs")!!
-        val btMac = call.argument<String>("btMac")!!
+        val startTs: Long = call.argument<Long>("startTs")!!
+        val endTs: Long = call.argument<Long>("endTs")!!
+        val btMac: String = call.argument<String>("btMac")!!
         NexRingManager.get().sleepApi().getFingerTemperatureList(btMac, startTs, endTs) {
           result.success(it?.let { pairData ->
             val jsonArrayData = JSONArray().apply {
@@ -623,7 +658,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
         }
       }
       Constants.sleep_getSleepDataByDate -> {
-        NexRingManager.get().sleepApi().getSleepDateByDate(call.argument<String>("btMac")!!, call.argument<Long>("ts")?.let { Calendar.Builder().setInstant(it).build() }
+        NexRingManager.get().sleepApi().getSleepDataByDate(call.argument<String>("btMac")!!, call.argument<Long>("ts")?.let { it: Long -> Calendar.Builder().setInstant(it).build() }
           ?: todayCalendar()) { sleepData ->
           if(sleepData == null) {
             result.success(JSONObject().apply {
@@ -641,7 +676,8 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
                       SLEEP_STATE_WAKE -> 0
                       SLEEP_STATE_REM -> 1
                       SLEEP_STATE_LIGHT -> 2
-                      else -> 3
+                      SLEEP_STATE_DEEP -> 3
+                      else -> 4
                     })
                     put(jsonObject)
                   }
@@ -653,7 +689,8 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
                       SLEEP_STATE_WAKE -> 0
                       SLEEP_STATE_REM -> 1
                       SLEEP_STATE_LIGHT -> 2
-                      else -> 3
+                      SLEEP_STATE_DEEP -> 3
+                      else -> 4
                     })
                     jsonObject.put("duration", it.duration)
                     jsonObject.put("percent", it.percent)
@@ -671,6 +708,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
                   put("spo2", sleepModel.spo2)
                   put("btMac", sleepModel.btMac)
                   put("hrDip", sleepModel.hrDip)
+                  put("isNap", sleepModel.isNap)
                   put("sleepStages", jsonArraySleepStages)
                   put("sleepStates", jsonArraySleepStates)
                 })
@@ -699,7 +737,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 
           override fun onSyncDataFromDevice(state: Int, progress: Int) {
             logi("MainActivity", "checkOnSynced $state")
-            if(state == lib.linktop.nexring.api.LOAD_DATA_STATE_COMPLETED) {
+            if(state == LOAD_DATA_STATE_COMPLETED) {
               result.success(true)
             }
           }
@@ -719,7 +757,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
     }
   }
 
-  private fun upgradeApiMethodCallHandler(call: MethodCall, result: MethodChannel.Result) {
+  private fun upgradeApiMethodCallHandler(call: MethodCall, result: Result) {
     when(call.method) {
       Constants.upgrade_reboot -> {}
       Constants.upgrade_upgrade -> {}
@@ -729,7 +767,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
     }
   }
 
-  private fun deviceApiMethodCallHandler(call: MethodCall, result: MethodChannel.Result) {
+  private fun deviceApiMethodCallHandler(call: MethodCall, result: Result) {
     when(call.method) {
       Constants.device_bind -> {
         NexRingManager.get().deviceApi().bind {
@@ -781,6 +819,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
         NexRingManager.get().deviceApi().getDeviceInfo {
           result.success(JSONObject().apply {
             put("productColor", it.productColor)
+            put("generation", it.generation)
             put("productSize", it.productSize)
             put("bluetoothAddress", it.bluetoothAddress)
             put("firmwareVersion", it.firmwareVersion)
@@ -793,7 +832,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
     }
   }
 
-  private fun settingsApiMethodCallHandler(call: MethodCall, result: MethodChannel.Result) {
+  private fun settingsApiMethodCallHandler(call: MethodCall, result: Result) {
     when(call.method) {
       Constants.settings_timestampSync -> {
         NexRingManager.get().settingsApi().timestampSync(call.argument<Long>("ts") ?: System.currentTimeMillis()) {

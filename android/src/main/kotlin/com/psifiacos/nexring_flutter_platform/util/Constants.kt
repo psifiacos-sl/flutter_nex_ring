@@ -3,6 +3,10 @@ package com.psifiacos.nexring_flutter_platform.util
 class Constants {
 
     companion object {
+        const val init = "init"
+        const val dispose = "dispose"
+        const val isInitialized = "isInitialized"
+
         const val methodChannelBT = "group.com.psifiacos.aniclient/nex_ring/bt"
         const val methodChannelSleep = "group.com.psifiacos.aniclient/nex_ring/sleep"
         const val methodChannelHealth = "group.com.psifiacos.aniclient/nex_ring/health"

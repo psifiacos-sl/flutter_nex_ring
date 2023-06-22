@@ -2,11 +2,12 @@
 import '../utils/nex_ring_constants.dart';
 
 class BatteryInfo {
-  int voltage, level;
+  int level;
   BatteryState state;
+  int? voltage;
 
   BatteryInfo(
-      {required this.level, required this.state, required this.voltage});
+      {required this.level, required this.state, this.voltage});
 
   factory BatteryInfo.fromJson(Map<String, dynamic> json) {
     final natState = json['state'];

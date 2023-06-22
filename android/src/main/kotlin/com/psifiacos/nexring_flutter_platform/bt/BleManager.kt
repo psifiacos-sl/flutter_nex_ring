@@ -1,6 +1,7 @@
 package com.psifiacos.nexring_flutter_platform.bt
 
 import android.annotation.SuppressLint
+import android.app.Application
 import android.bluetooth.*
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
@@ -10,17 +11,23 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import com.psifiacos.nexring_flutter_platform.NexringFlutterPlatformPlugin
 import com.psifiacos.nexring_flutter_platform.util.*
 import lib.linktop.nexring.*
 import lib.linktop.nexring.api.*
 import java.util.*
 import kotlin.collections.ArrayList
 
-class BleManager(private val context: Context) {
+
+private const val OEM_STEP_GET_CERTIFICATION_ENABLED = 0
+private const val OEM_STEP_CERTIFY = 1
+private const val OEM_STEP_TIMESTAMP_SYNC = 2
+private const val OEM_STEP_PROCESS_COMPLETED = 3
+class BleManager(private val app: Application) {
 
     private val tag = "NexRingSDK:BleManager"
     private val mBluetoothAdapter =
-        (context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
+        (app.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
 
     private val mOnBleConnectionListeners: MutableList<OnBleConnectionListener> = ArrayList()
 
@@ -40,13 +47,17 @@ class BleManager(private val context: Context) {
                 if (bytes.matchFromAdvertisementData()) {
                     val address = result.device.address
                     if (!scanDevMacList.contains(address)) {
-                        val colorSize = bytes.toColorSize()
-                        val bleDevice = BleDevice(
-                            device = result.device,
-                            color = colorSize.first,
-                            size = colorSize.second,
-                            rssi = result.rssi
-                        )
+                        val bleDevice = bytes.parseScanRecord().run {
+                            BleDevice(
+                                result.device,
+                                color,
+                                size,
+                                batteryState,
+                                batteryLevel,
+                                generation,
+                                result.rssi
+                            )
+                        }
                         scanDevMacList.add(address)
                         mOnBleScanCallback?.apply {
                             post {
@@ -78,7 +89,9 @@ class BleManager(private val context: Context) {
                     NexRingManager.get().apply {
                         healthApi().apply {
                             setOnPGReadingsListener(null)
-                            cancelTakePPGReadings()
+                            if(isTakingPPGReadings()) {
+                                cancelTakePPGReadings()
+                            }
                         }
                         setBleGatt(null)
                         unregisterRingService()
@@ -101,30 +114,34 @@ class BleManager(private val context: Context) {
                 tag,
                 "onConnectionStateChange->status:$status, newState:$newState"
             )
-            when (newState) {
-                BluetoothProfile.STATE_DISCONNECTED -> {
-                    bleState = BluetoothProfile.STATE_DISCONNECTED
-                    postBleState()
-                    NexRingManager.get().apply {
-                        healthApi().apply {
-                            setOnPGReadingsListener(null)
-                            cancelTakePPGReadings()
+            if (NexringFlutterPlatformPlugin.isInitialized()) {
+                when (newState) {
+                    BluetoothProfile.STATE_DISCONNECTED -> {
+                        bleState = BluetoothProfile.STATE_DISCONNECTED
+                        postBleState()
+                        NexRingManager.get().apply {
+                            healthApi().apply {
+                                setOnPGReadingsListener(null)
+                                if(isTakingPPGReadings()) {
+                                    cancelTakePPGReadings()
+                                }
+                            }
+                            setBleGatt(null)
+                            unregisterRingService()
                         }
-                        setBleGatt(null)
-                        unregisterRingService()
+                        connectedDevice = null
+                        gatt.close()
                     }
-                    connectedDevice = null
-                    gatt.close()
-                }
-                BluetoothProfile.STATE_CONNECTING -> {
-                    bleState = BluetoothProfile.STATE_CONNECTING
-                    postBleState()
-                }
-                BluetoothProfile.STATE_CONNECTED -> {
-                    bleState = BluetoothProfile.STATE_CONNECTED
-                    connectedDevice = gatt.device
-                    postBleState()
-                    gatt.discoverServices()
+                    BluetoothProfile.STATE_CONNECTING -> {
+                        bleState = BluetoothProfile.STATE_CONNECTING
+                        postBleState()
+                    }
+                    BluetoothProfile.STATE_CONNECTED -> {
+                        bleState = BluetoothProfile.STATE_CONNECTED
+                        connectedDevice = gatt.device
+                        postBleState()
+                        gatt.discoverServices()
+                    }
                 }
             }
         }
@@ -154,46 +171,47 @@ class BleManager(private val context: Context) {
             if (gattStatusSuccess &&
                 isRingServiceRegistered
             ) {
-                post {
-                    //you need to synchronize the timestamp with the device first after
-                    //the service registration is successful.
-                    logi(tag, "onDescriptionWrite(), timestampSync")
-                    NexRingManager.get()
-                        .settingsApi()
-                        .timestampSync(System.currentTimeMillis()) {
-                            logi(tag, "onDescriptionWrite(), onBleReady")
-                            synchronized(mOnBleConnectionListeners) {
-                                mOnBleConnectionListeners.forEach {
-                                    it.onBleReady()
-                                    try {
-                                        context.unregisterReceiver(mReceiver)
-                                    } catch (e: IllegalArgumentException) {
-                                        logi(tag, "No bleManager.mReceiver registered")
-                                    }
-                                    context.registerReceiver(mReceiver, android.content.IntentFilter(
-                                        BluetoothAdapter.ACTION_STATE_CHANGED))
-                                }
-                            }
-                        }
-                }
+//                post {
+//                    //you need to synchronize the timestamp with the device first after
+//                    //the service registration is successful.
+//                    logi(tag, "onDescriptionWrite(), timestampSync")
+//                    NexRingManager.get()
+//                        .settingsApi()
+//                        .timestampSync(System.currentTimeMillis()) {
+//                            logi(tag, "onDescriptionWrite(), onBleReady")
+//                            synchronized(mOnBleConnectionListeners) {
+//                                    try {
+//                                        context.unregisterReceiver(mReceiver)
+//                                    } catch (e: IllegalArgumentException) {
+//                                        logi(tag, "No bleManager.mReceiver registered")
+//                                    }
+//                                    context.registerReceiver(mReceiver, android.content.IntentFilter(
+//                                        BluetoothAdapter.ACTION_STATE_CHANGED))
+//                                mOnBleConnectionListeners.forEach {
+//                                    it.onBleReady()
+//                                }
+//                            }
+//                        }
+//                }
+                OemCertificationProcess().start()
             }
         }
     }
 
     @SuppressLint("MissingPermission", "ObsoleteSdkInt")
     private fun connectInterval(device: BluetoothDevice) {
-        logi(tag, "connect gatt to ${device.address}")
+        loge(tag, "connect gatt to ${device.address}")
         bleGatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 //            device.connectGatt(context, false, gattCallback)
-            device.connectGatt(context, false, mGattCallback, BluetoothDevice.TRANSPORT_LE)
+            device.connectGatt(app, false, mGattCallback, BluetoothDevice.TRANSPORT_LE)
         } else {
-            device.connectGatt(context, false, mGattCallback)
+            device.connectGatt(app, false, mGattCallback)
         }.apply { connect() }
     }
 
     fun isSupportBle(): Boolean =
 //         Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2 &&
-        context.applicationContext.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)
+        app.applicationContext.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)
 
 
     @SuppressLint("MissingPermission")
@@ -207,12 +225,14 @@ class BleManager(private val context: Context) {
     }
 
     @SuppressLint("MissingPermission")
-    fun cancelScan() {
+    fun cancelScan(notifiy: Boolean = true) {
         if (isScanning) {
             isScanning = false
             mBluetoothAdapter.bluetoothLeScanner.stopScan(mScanCallback)
             post {
-                mOnBleScanCallback?.onScanFinished()
+                if(notifiy) {
+                    mOnBleScanCallback?.onScanFinished()
+                }
                 mOnBleScanCallback = null
                 scanStopRunnable.handlerRemove()
             }
@@ -234,7 +254,7 @@ class BleManager(private val context: Context) {
         }
     }
 
-    fun connect(device: BluetoothDevice) {
+    private fun connect(device: BluetoothDevice) {
         val delayConnect = isScanning
         cancelScan()
         if (delayConnect) {
@@ -277,4 +297,103 @@ class BleManager(private val context: Context) {
             }
         }
     }
+
+    inner class OemCertificationProcess : Thread() {
+
+        private val innerTag = "NexRing:OemCertificationProcess"
+        private val locked = Object()
+        private var step = OEM_STEP_GET_CERTIFICATION_ENABLED
+
+        override fun run() {
+            while (step < OEM_STEP_PROCESS_COMPLETED) {
+                sleep(200L)
+                synchronized(locked) {
+                    when (step) {
+                        OEM_STEP_GET_CERTIFICATION_ENABLED -> {
+                            loge(innerTag, "OEM_STEP_GET_CERTIFICATION_ENABLED")
+                            NexRingManager.get().securityApi().getOemCertificationEnabled {
+                                step = if (it) OEM_STEP_CERTIFY else OEM_STEP_TIMESTAMP_SYNC
+                                synchronized(locked) {
+                                    locked.notify()
+                                }
+                            }
+                        }
+
+                        OEM_STEP_CERTIFY -> {
+                            loge(innerTag, "OEM_STEP_CERTIFY")
+                            NexRingManager.get().securityApi().oemCertify { result ->
+                                when (result) {
+                                    OEM_CERTIFICATION_FAILED_FOR_CHECK_R2 -> {
+                                        logi(innerTag, "OEM_CERTIFICATION_FAILED_FOR_CHECK_R2")
+                                        step = OEM_STEP_PROCESS_COMPLETED
+                                        synchronized(locked) {
+                                            locked.notify()
+                                        }
+                                    }
+
+                                    OEM_CERTIFICATION_FAILED_FOR_DECRYPT -> {
+                                        logi(innerTag, "OEM_CERTIFICATION_FAILED_FOR_DECRYPT")
+                                        step = OEM_STEP_PROCESS_COMPLETED
+                                        synchronized(locked) {
+                                            locked.notify()
+                                        }
+                                    }
+
+                                    OEM_CERTIFICATION_FAILED_FOR_SN_NULL -> {
+                                        logi(innerTag, "OEM_CERTIFICATION_FAILED_FOR_SN_NULL")
+                                        step = OEM_STEP_PROCESS_COMPLETED
+                                        synchronized(locked) {
+                                            locked.notify()
+                                        }
+                                    }
+
+                                    OEM_CERTIFICATION_START -> {
+                                        logi(innerTag, "OEM_CERTIFICATION_START")
+                                    }
+
+                                    OEM_CERTIFICATION_SUCCESSFUL -> {
+                                        logi(innerTag, "OEM_CERTIFICATION_SUCCESSFUL")
+                                        step = OEM_STEP_TIMESTAMP_SYNC
+                                        synchronized(locked) {
+                                            locked.notify()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        OEM_STEP_TIMESTAMP_SYNC -> {
+                            loge(innerTag, "OEM_STEP_TIMESTAMP_SYNC")
+                            NexRingManager.get()
+                                .settingsApi()
+                                .timestampSync(System.currentTimeMillis()) {
+                                    loge(innerTag, "OEM_STEP_TIMESTAMP_SYNC result $it")
+                                    synchronized(mOnBleConnectionListeners) {
+                                        post {
+                                            try {
+                                                app.applicationContext.unregisterReceiver(mReceiver)
+                                            } catch (e: IllegalArgumentException) {
+                                                logi(tag, "No bleManager.mReceiver registered")
+                                            }
+                                            app.applicationContext.registerReceiver(mReceiver, android.content.IntentFilter(
+                                            BluetoothAdapter.ACTION_STATE_CHANGED))
+                                            mOnBleConnectionListeners.forEach { listener ->
+                                                listener.onBleReady()
+                                            }
+                                        }
+                                    }
+                                    step = OEM_STEP_PROCESS_COMPLETED
+                                    synchronized(locked) {
+                                        locked.notify()
+                                    }
+                                }
+                        }
+                    }
+                    locked.wait()
+                }
+            }
+            loge(innerTag, "OEM_STEP_PROCESS_COMPLETED")
+        }
+    }
+
 }

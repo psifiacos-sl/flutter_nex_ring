@@ -153,4 +153,17 @@ class NexRingAndroidManager extends NexRingAndroidPlatform {
   void unregisterRingService() {
     _methodChannel.invokeMethod(NexRingConstants.bt_unregisterRingService);
   }
+
+  @override
+  Future<bool> disposeSDK() async {
+    return await _methodChannel.invokeMethod(NexRingConstants.dispose);
+  }
+
+  @override
+  Future<bool> initSDK() async {
+    return await _methodChannel.invokeMethod(NexRingConstants.init);
+  }
+
+  @override
+  Future<bool> get isInitialized async => await _methodChannel.invokeMethod(NexRingConstants.isInitialized);
 }

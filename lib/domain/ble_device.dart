@@ -4,12 +4,19 @@ class BleDevice {
   final int rssi, size;
   final BluetoothDevice device;
   final DeviceColor color;
+  final int? generation, batteryLevel;
+  final BatteryState? batteryState;
 
   factory BleDevice.fromJson(Map<String, dynamic> json) {
     final natColor = json['color'];
     return BleDevice(
         rssi: json['rssi'],
         size: json['size'],
+        generation: json['generation'],
+        batteryLevel: json['batteryLevel'],
+        batteryState: json['batteryState'] != null
+          ? json['batteryState'] == 0 ? BatteryState.discharging : BatteryState.charging
+          : null,
         color: natColor == 0
             ? DeviceColor.deepBlack
             : natColor == 1
@@ -22,7 +29,7 @@ class BleDevice {
       {required this.rssi,
       required this.size,
       required this.color,
-      required this.device});
+      required this.device, this.generation, this.batteryState, this.batteryLevel});
 }
 
 class BluetoothDevice {
@@ -47,11 +54,13 @@ class BluetoothDevice {
 class DeviceInfo {
   String btAddress, firmwareVersion;
   int size;
+  int? generation;
   DeviceColor color;
 
   DeviceInfo(
       {required this.color,
       required this.size,
+        this.generation,
       required this.btAddress,
       required this.firmwareVersion});
 
@@ -64,6 +73,7 @@ class DeviceInfo {
                 ? DeviceColor.golden
                 : DeviceColor.silver,
         size: json['productSize'],
+        generation: json['generation'],
         btAddress: json['bluetoothAddress'],
         firmwareVersion: json['firmwareVersion']);
   }
