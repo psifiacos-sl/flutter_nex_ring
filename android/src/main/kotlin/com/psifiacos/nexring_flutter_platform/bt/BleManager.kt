@@ -98,6 +98,10 @@ class BleManager(private val app: Application) {
                     }
                     connectedDevice = null
                     bleGatt?.close()
+                    bleGatt = null
+                    logi(
+                        tag,
+                        "BT turned off, Gatt closed")
                 }
             }
         }
@@ -114,11 +118,11 @@ class BleManager(private val app: Application) {
                 tag,
                 "onConnectionStateChange->status:$status, newState:$newState"
             )
-            if (NexringFlutterPlatformPlugin.isInitialized()) {
-                when (newState) {
-                    BluetoothProfile.STATE_DISCONNECTED -> {
-                        bleState = BluetoothProfile.STATE_DISCONNECTED
-                        postBleState()
+            when (newState) {
+                BluetoothProfile.STATE_DISCONNECTED -> {
+                    bleState = BluetoothProfile.STATE_DISCONNECTED
+                    postBleState()
+                    if(NexringFlutterPlatformPlugin.isInitialized()) {
                         NexRingManager.get().apply {
                             healthApi().apply {
                                 setOnPGReadingsListener(null)
@@ -129,19 +133,24 @@ class BleManager(private val app: Application) {
                             setBleGatt(null)
                             unregisterRingService()
                         }
-                        connectedDevice = null
-                        gatt.close()
                     }
-                    BluetoothProfile.STATE_CONNECTING -> {
-                        bleState = BluetoothProfile.STATE_CONNECTING
-                        postBleState()
-                    }
-                    BluetoothProfile.STATE_CONNECTED -> {
-                        bleState = BluetoothProfile.STATE_CONNECTED
-                        connectedDevice = gatt.device
-                        postBleState()
-                        gatt.discoverServices()
-                    }
+                    connectedDevice = null
+                    gatt.close()
+                    bleGatt?.close()
+                    bleGatt = null
+                    logi(
+                        tag,
+                        "BT disconnected, Gatt closed")
+                }
+                BluetoothProfile.STATE_CONNECTING -> {
+                    bleState = BluetoothProfile.STATE_CONNECTING
+                    postBleState()
+                }
+                BluetoothProfile.STATE_CONNECTED -> {
+                    bleState = BluetoothProfile.STATE_CONNECTED
+                    connectedDevice = gatt.device
+                    postBleState()
+                    gatt.discoverServices()
                 }
             }
         }
@@ -272,7 +281,6 @@ class BleManager(private val app: Application) {
     @SuppressLint("MissingPermission")
     fun disconnect() {
         bleGatt?.disconnect()
-        bleGatt = null
     }
 
 

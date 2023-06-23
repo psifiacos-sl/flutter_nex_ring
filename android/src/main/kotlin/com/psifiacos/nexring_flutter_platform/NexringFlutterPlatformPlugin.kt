@@ -57,6 +57,7 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
         NexRingManager.init(context as Application)
         BleManager(context as Application)
       }.value
+      NexRingManager.get().healthApi().cancelTakePPGReadings()
       logi("NexRingFlutterPlugin", "Init SDK")
       return true
     }
@@ -65,14 +66,22 @@ class NexringFlutterPlatformPlugin: FlutterPlugin, MethodCallHandler {
 
   private fun disposeNexRingSDK(): Boolean {
     if(isInitialized()) {
-      NexRingManager.get().sleepApi().setOnSleepDataLoadListener(null)
-      bleManager!!.cancelScan(notifiy = false)
-      bleManager!!.removeOnBleConnectionListener(onBleConnectionListener)
       try {
         context!!.unregisterReceiver(bleManager!!.mReceiver)
       } catch (e: IllegalArgumentException) {
         logi("NexRingFlutterPlugin", "No bleManager.mReceiver registered")
       }
+      NexRingManager.get().apply {
+        healthApi().apply {
+          setOnPGReadingsListener(null)
+          cancelTakePPGReadings()
+        }
+        sleepApi().setOnSleepDataLoadListener(null)
+        setBleGatt(null)
+        unregisterRingService()
+      }
+      bleManager!!.cancelScan(notifiy = false)
+      bleManager!!.removeOnBleConnectionListener(onBleConnectionListener)
       bleManager!!.disconnect()
       bleManager = null
       NexRingManager.destroy()
